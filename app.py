@@ -1,5 +1,12 @@
 import streamlit as st
-from auth_utils import require_login, render_sidebar, get_user_name
+from auth_utils import (
+    init_auth_db,
+    ensure_session_state,
+    register_user,
+    login_user,
+    render_sidebar,
+    current_user,
+)
 
 st.set_page_config(
     page_title="PortfolioSim",
@@ -7,6 +14,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+init_auth_db()
+ensure_session_state()
 
 st.markdown("""
 <style>
@@ -24,13 +34,59 @@ div[data-testid="stMetric"] [data-testid="stMetricValue"]{font-family:'Space Mon
 </style>
 """, unsafe_allow_html=True)
 
-require_login()
+if not st.session_state.logged_in:
+    st.markdown("## 💼 Welcome to PortfolioSim")
+    st.info("Please login or register to continue.")
+
+    login_tab, register_tab = st.tabs(["Login", "Register"])
+
+    with login_tab:
+        st.subheader("Login")
+
+        login_username = st.text_input("Username", key="login_username")
+        login_password = st.text_input("Password", type="password", key="login_password")
+
+        if st.button("Login Now"):
+            success, message, user = login_user(login_username, login_password)
+
+            if success:
+                st.session_state.logged_in = True
+                st.session_state.user = user
+                st.success(message)
+                st.rerun()
+            else:
+                st.error(message)
+
+    with register_tab:
+        st.subheader("Register")
+
+        reg_username = st.text_input("Choose Username", key="reg_username")
+        reg_email = st.text_input("Email", key="reg_email")
+        reg_password = st.text_input("Choose Password", type="password", key="reg_password")
+        reg_confirm = st.text_input("Confirm Password", type="password", key="reg_confirm")
+
+        if st.button("Create Account"):
+            if not reg_username or not reg_email or not reg_password or not reg_confirm:
+                st.warning("Please fill all fields.")
+            elif reg_password != reg_confirm:
+                st.error("Passwords do not match.")
+            elif len(reg_password) < 4:
+                st.error("Password must be at least 4 characters.")
+            else:
+                success, message = register_user(reg_username, reg_email, reg_password)
+                if success:
+                    st.success(message)
+                else:
+                    st.error(message)
+
+    st.stop()
+
 render_sidebar()
 
-user_name = get_user_name()
+user = current_user()
 
 st.markdown("## 💼 Welcome to PortfolioSim")
-st.success(f"Logged in as {user_name}")
+st.success(f"Logged in as {user['username']}")
 
 st.info("Running on **mock data** matching the `portfolio_sim` database schema. Connect the DB by replacing functions in `mock_data/dummy_data.py`.")
 
