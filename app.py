@@ -1,4 +1,5 @@
 import streamlit as st
+from auth_utils import require_login, render_sidebar, get_user_name
 
 st.set_page_config(
     page_title="PortfolioSim",
@@ -6,25 +7,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
-# -----------------------------
-# Session state setup
-# -----------------------------
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-
-if "current_user" not in st.session_state:
-    st.session_state.current_user = None
-
-# Demo in-memory users
-# NOTE: This is only for demo/testing.
-if "users" not in st.session_state:
-    st.session_state.users = {
-        "demo_user": {
-            "email": "demo@example.com",
-            "password": "1234"
-        }
-    }
 
 st.markdown("""
 <style>
@@ -42,85 +24,16 @@ div[data-testid="stMetric"] [data-testid="stMetricValue"]{font-family:'Space Mon
 </style>
 """, unsafe_allow_html=True)
 
-# -----------------------------
-# Login/Register screen
-# -----------------------------
-if not st.session_state.logged_in:
-    st.markdown("<h1 style='text-align:center;'>💼 PortfolioSim</h1>", unsafe_allow_html=True)
-    st.markdown(
-        "<p style='text-align:center; color:#64748b;'>Login or create an account to continue</p>",
-        unsafe_allow_html=True
-    )
+require_login()
+render_sidebar()
 
-    login_tab, register_tab = st.tabs(["Login", "Register"])
+user_name = get_user_name()
 
-    with login_tab:
-        st.subheader("Login")
-        login_username = st.text_input("Username", key="login_username")
-        login_password = st.text_input("Password", type="password", key="login_password")
-
-        if st.button("Login"):
-            if login_username in st.session_state.users:
-                saved_password = st.session_state.users[login_username]["password"]
-                if login_password == saved_password:
-                    st.session_state.logged_in = True
-                    st.session_state.current_user = login_username
-                    st.success("Login successful!")
-                    st.rerun()
-                else:
-                    st.error("Incorrect password")
-            else:
-                st.error("User not found")
-
-    with register_tab:
-        st.subheader("Create Account")
-        reg_username = st.text_input("Choose a username", key="reg_username")
-        reg_email = st.text_input("Email", key="reg_email")
-        reg_password = st.text_input("Choose a password", type="password", key="reg_password")
-        reg_confirm = st.text_input("Confirm password", type="password", key="reg_confirm")
-
-        if st.button("Register"):
-            if not reg_username or not reg_email or not reg_password or not reg_confirm:
-                st.warning("Please fill all fields")
-            elif reg_username in st.session_state.users:
-                st.error("Username already exists")
-            elif reg_password != reg_confirm:
-                st.error("Passwords do not match")
-            else:
-                st.session_state.users[reg_username] = {
-                    "email": reg_email,
-                    "password": reg_password
-                }
-                st.success("Registration successful! Please login.")
-
-    st.stop()
-
-# -----------------------------
-# Sidebar after login
-# -----------------------------
-current_username = st.session_state.current_user
-current_email = st.session_state.users[current_username]["email"]
-
-with st.sidebar:
-    st.markdown('<div style="font-size:1.6rem;font-weight:800;color:#00d4aa;letter-spacing:-1px;">PortfolioSim</div>', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:0.7rem;color:#64748b;letter-spacing:3px;text-transform:uppercase;">Investment Simulator</div>', unsafe_allow_html=True)
-    st.markdown("---")
-    st.markdown(f"**👤 {current_username}**")
-    st.markdown(f'<span style="color:#64748b;font-size:0.8rem;">{current_email}</span>', unsafe_allow_html=True)
-    st.markdown("---")
-    st.markdown('<span style="color:#f59e0b;font-size:0.75rem;">⚠️ Mock Data Mode</span>', unsafe_allow_html=True)
-    st.markdown('<span style="color:#64748b;font-size:0.72rem;">DB: portfolio_sim (not connected)</span>', unsafe_allow_html=True)
-
-    if st.button("Logout"):
-        st.session_state.logged_in = False
-        st.session_state.current_user = None
-        st.rerun()
-
-# -----------------------------
-# Main app content
-# -----------------------------
 st.markdown("## 💼 Welcome to PortfolioSim")
+st.success(f"Logged in as {user_name}")
+
 st.info("Running on **mock data** matching the `portfolio_sim` database schema. Connect the DB by replacing functions in `mock_data/dummy_data.py`.")
+
 st.markdown("""
 | Page | Maps To | Description |
 |------|---------|-------------|
