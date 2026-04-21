@@ -1,5 +1,5 @@
 import streamlit as st
-from auth_utils import require_login, render_sidebar, get_user_name
+from auth_utils import init_auth_db, ensure_session_state, require_login, render_sidebar, current_user
 
 st.set_page_config(
     page_title="Profiles - PortfolioSim",
@@ -7,6 +7,10 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+init_auth_db()
+ensure_session_state()
+require_login()
 
 st.markdown("""
 <style>
@@ -20,13 +24,10 @@ h1,h2,h3,h4{font-family:'Syne',sans-serif!important;color:var(--text)!important;
 </style>
 """, unsafe_allow_html=True)
 
-require_login()
 render_sidebar()
-
-user_name = get_user_name()
+user = current_user()
 
 st.title("👤 Profiles")
-st.success(f"Logged in as {user_name}")
-
+st.success(f"Logged in as {user['username']}")
 st.write("This is the Profiles page.")
 st.info("Add your profile-related content here.")
